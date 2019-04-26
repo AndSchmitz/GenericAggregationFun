@@ -6,7 +6,7 @@ options(warnPartialMatchDollar = T)
 
 library(tidyverse)
 
-WorkDir <- "W:\\Tools und Skripte\\R Function CalculateMonthlyOrAnnualAggs"
+WorkDir <- "C:\\Users\\aschmitz\\Desktop\\tmp\\ParallelDemo"
 
 source(file.path(WorkDir,"CalculateMonthlyOrAnnualAggs.R"))
 
@@ -31,13 +31,9 @@ Dat$duration_days <- as.numeric(Dat$date_end - Dat$date_start)
 #Discard periods with unexpected duration
 Dat <- Dat[Dat$duration_days > 0,]
 
-#Call the CalculateMonthlyOrAnnualAggs() function for each ID (data-subset) - calculate aggregates
-#In this example, monthly aggregation is used.
+#Calculate annual aggregates
 #Parameter AggregationTimeSpan can be changed to "annual" for annual aggregates.
-AggsList <- by(data=Dat, INDICES = Dat[,"ID"], FUN=CalculateMonthlyAndAnnualAggs, AggregationTimeSpan="monthly")
-#Convert aggregates from a list to a dataframe
-AggsDF <- do.call(rbind.data.frame, AggsList)
-str(AggsDF)
+AggsDF <- CalculateMonthlyAndAnnualAggs(DataToAggregate=Dat,AggregationTimeSpan="monthly")
 
 #Merge information on ID columsn and save data
 AggsDF <- merge(AggsDF,unique(Dat[,c(IDCols,"ID")]),all.x = T)
@@ -61,4 +57,3 @@ ggplot(data=AggsDF,mapping = aes(x=Time,y=PropTempCover,fill=ID)) +
 ggsave(filename = file.path(OutDir,"MonthlyTempCover.png"),width=40,height = 15,units = "cm")
 
 
-  
