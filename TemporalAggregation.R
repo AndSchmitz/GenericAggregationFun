@@ -48,12 +48,6 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
         date_end = date_start + duration_days,
         Month_start = as.Date(paste0(strftime(x=date_start,format = "%Y-%m"),"-01")),
         Month_end = as.Date(paste0(strftime(x=date_end,format = "%Y-%m"),"-01"))
-        # Year_start = strftime(x=date_start,format = "%Y"),
-        # Year_end = strftime(x=date_end,format = "%Y"),
-        # Month_start = strftime(x=date_start,format = "%m"),
-        # Month_end = strftime(x=date_end,format = "%m"),
-        # Month_start = paste0(Year_start,"-",Month_start),
-        # Month_end = paste0(Year_end,"-",Month_end)
       ) %>%
       select(
         ID,Month_start,Month_end
@@ -157,54 +151,7 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
     Aggs <- Aggs %>%
       select(-date_aggregation_start_d1900,-date_aggregation_end_d1900)
     
-    # 
-    # #Create monthly / annual aggregates: averages and sums
-    # SubDailyAvg$date <- as.Date("1900-01-01") + SubDailyAvg$d_1900
-    # SubDailyAvg$year <- as.numeric(strftime(x=SubDailyAvg$date,format="%Y"))
-    # SubDailyAvg$month <- as.numeric(strftime(x=SubDailyAvg$date,format="%m"))
-    # 
-    # if ( AggregationTimeSpan == "monthly" ) {
-    #   Avg <- aggregate(value ~ year + month,data=SubDailyAvg,FUN=mean)
-    #   Avg <- rename(Avg,"MonthlyAvg" = "value")
-    #   Median <- aggregate(value ~ year + month,data=SubDailyAvg,FUN=median)
-    #   Median <- rename(Median,"MonthlyMedian" = "value")
-    #   Sum <- aggregate(value ~ year + month,data=SubDailyAvg,FUN=sum)
-    #   Sum <- rename(Sum,"MonthlySum" = "value")
-    #   Min <- aggregate(value ~ year + month,data=SubDailyAvg,FUN=min)
-    #   Min <- rename(Min,"MonthlyMin" = "value")
-    #   Max <- aggregate(value ~ year + month,data=SubDailyAvg,FUN=max)
-    #   Max <- rename(Max,"MonthlyMax" = "value")    
-    #   TempCover <- aggregate(value ~ year + month,data=SubDailyAvg,FUN=length)
-    #   TempCover <- rename(TempCover,"nDaysWithData" = "value")
-    #   TempCover$nDaysOfMonth <- monthDays(as.Date(paste(TempCover$year,TempCover$month,"15",sep="-")))
-    #   TempCover$PropTempCover <- TempCover$nDaysWithData / TempCover$nDaysOfMonth
-    #   TempCover <- TempCover[,c("year","month","PropTempCover")]
-    # } else if ( AggregationTimeSpan == "annual" ) {
-    #   Avg <- aggregate(value ~ year,data=SubDailyAvg,FUN=mean)
-    #   Avg <- rename(Avg,"AnnualAvg" = "value")
-    #   Median <- aggregate(value ~ year,data=SubDailyAvg,FUN=median)
-    #   Median <- rename(Median,"AnnualMedian" = "value")    
-    #   Sum <- aggregate(value ~ year,data=SubDailyAvg,FUN=sum)
-    #   Sum <- rename(Sum,"AnnualSum" = "value")
-    #   Min <- aggregate(value ~ year,data=SubDailyAvg,FUN=min)
-    #   Min <- rename(Min,"AnnualMin" = "value")
-    #   Max <- aggregate(value ~ year,data=SubDailyAvg,FUN=max)
-    #   Max <- rename(Max,"AnnualMax" = "value")        
-    #   TempCover <- aggregate(value ~ year,data=SubDailyAvg,FUN=length)
-    #   TempCover <- rename(TempCover,"nDaysWithData" = "value")
-    #   TempCover$nDaysOfYear <- yearDays(as.Date(paste(TempCover$year,"06","15",sep="-")))
-    #   TempCover$PropTempCover <- TempCover$nDaysWithData / TempCover$nDaysOfYear
-    #   TempCover <- TempCover[,c("year","PropTempCover")]
-    # }
-    
-    #Merge aggregates
-    # Aggs <- merge(Avg,Median)
-    # Aggs <- merge(Aggs,Sum)
-    # Aggs <- merge(Aggs,Min)
-    # Aggs <- merge(Aggs,Max)
-    # Aggs <- merge(Aggs,TempCover)
-    # Aggs$ID <- CurrentID
-    
+
     return(Aggs)
     
   } #enf of function to aggregate per ID
