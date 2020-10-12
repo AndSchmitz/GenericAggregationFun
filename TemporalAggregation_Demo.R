@@ -9,13 +9,13 @@ options(warnPartialMatchDollar = T)
 library(tidyverse)
 
 #Adjust work dir path
-WorkDir <- "C:\\Users\\aschmitz\\Desktop\\tmp\\R Function TemporalAggregation"
+WorkDir <- "D:\\Users\\Schmitz12\\Downloads\\GenericAggregationFun-master"
 
 #Load the function that does the actual work
 source(file.path(WorkDir,"TemporalAggregation.R"))
 
 #Prepare I/O
-InDir <- file.path(WorkDir,"Input")
+InDir <- file.path(WorkDir)
 OutDir <- file.path(WorkDir,"Output")
 dir.create(OutDir,showWarnings = F)
 
@@ -33,6 +33,7 @@ str(Dat)
 
 #Important:
 #Generate an ID per subset of data that should be aggregated. E.g. per country-plot-sampler_code
+#Can be more complicated, e.g. including substance.
 IDCols <- c("code_country","code_plot","code_sampler")
 Dat$ID <- as.factor(apply(X=Dat[,IDCols],MARGIN=1,FUN=paste,collapse="-"))
 
@@ -84,13 +85,14 @@ CustomAggs <- TemporalAggregation(DataToAggregate=Dat,AggregationPeriods=Aggrega
 #Plotting-----
 #
 
-AnnualAggs$Label = "annual"
-MonthlyAggs$Label = "monthly"
-CustomAggs$Label = "Custom"
+AnnualAggs$Label = "Annual"
+MonthlyAggs$Label = "Monthly"
+CustomAggs$Label = "Growing Season"
 PlotDat <- bind_rows(AnnualAggs,MonthlyAggs,CustomAggs)
 
 ggplot(data=PlotDat,mapping = aes(x=date_aggregation_start,y=Median,color=Label,shape=Label)) +
   geom_point() +
+  labs(color = "Aggregation period",shape = "Aggregation period") +
   facet_wrap( ~ ID,scales="free_y")
 ggsave(filename = file.path(OutDir,"Example_aggregation_results.png"),width=40,height = 15,units = "cm")
 write.table(x=PlotDat,file = file.path(OutDir,"Example_aggregation_results_data.csv"),sep=";",row.names = F)
