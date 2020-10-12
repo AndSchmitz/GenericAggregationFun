@@ -8,6 +8,7 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
   # I.e. in case of parallel measurements, aggregates (e.g. Max) are not calculated from original measurement values but from daily averages.
 
   require(parallel)
+  require(lubridate)
 
   
   #Sanity checks
@@ -74,8 +75,7 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
     if ( AggregationPeriods == "monthly" ) {
       AggregationPeriodsTmp <- tmp %>%
         mutate(
-          # nDaysPerMonth_start = monthDays(as.Date(paste(Year_start,Month_start,"15",sep="-"))),
-          nDaysPerMonth_end = monthDays(MonthInData),
+          nDaysPerMonth_end = days_in_month(MonthInData),
           date_aggregation_start = MonthInData,
           date_aggregation_end = as.Date(paste0(strftime(x=MonthInData,format="%Y-%m"),"-",nDaysPerMonth_end))
         ) 
