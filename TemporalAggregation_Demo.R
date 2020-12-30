@@ -9,7 +9,7 @@ options(warnPartialMatchDollar = T)
 library(tidyverse)
 
 #Adjust work dir path
-WorkDir <- "D:\\Users\\Schmitz12\\Downloads\\GenericAggregationFun-master"
+WorkDir <- "/home/schmitz/data/sync_gwdg/KRB/Produkte/2021 - Na Tracer Paper/Auswertungen/03_AggregateDepoOverSeasons"
 
 #Load the function that does the actual work
 source(file.path(WorkDir,"TemporalAggregation.R"))
@@ -20,7 +20,12 @@ OutDir <- file.path(WorkDir,"Output")
 dir.create(OutDir,showWarnings = F)
 
 #Load dummy data (coming from ICPF deposition data) 
-Dat <- read.table(file=file.path(InDir,"DummyData.csv"),sep=";",header = T)
+Dat <- read.table(
+  file = file.path(InDir,"DummyData.csv"),
+  sep = ";",
+  header = T,
+  stringsAsFactors = F
+)
 #Show dummy data structure
 str(Dat)
 
@@ -32,16 +37,16 @@ str(Dat)
 #
 
 #Important:
-#Generate an ID per subset of data that should be aggregated. E.g. per country-plot-sampler_code
-#Can be more complicated, e.g. including substance.
-IDCols <- c("code_country","code_plot","code_sampler")
-Dat$ID <- as.factor(apply(X=Dat[,IDCols],MARGIN=1,FUN=paste,collapse="-"))
-
-#Calculate the duration of each measurment period
-Dat$date_start <- as.Date(Dat$date_start,format = "%d.%m.%Y")
-Dat$date_end <- as.Date(Dat$date_end,format = "%d.%m.%Y")
-
-
+# - Define the level of aggregation of the data. I.e., generate an ID per subset of data that
+#   should be aggregated. E.g. per country-plot-sampler_code. Can be more complicated, e.g.
+#   including substance.
+# - date_start and date_end must be of class "date"
+Dat <- Dat %>%
+  mutate(
+    ID = paste(code_country, code_plot, code_sampler, sep = "-"),
+    date_start = as.Date(date_start,format = "%d.%m.%Y"),
+    date_end = as.Date(date_end,format = "%d.%m.%Y")
+  )
 
 
 #
