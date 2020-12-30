@@ -9,3 +9,5 @@ R function to aggregate period-wise data over time. For example, can calculate t
  - In a second step, the resulting daily values are aggregated over time (month, year, or other periods). This means that aggregates (e.g. max(), min(), ...) are not calculated from original measurement values but from daily averages over parallel measurements (if any parallel measurements are present).
  
  - The following aggregates are reported: Mean, Median, Min, Max, Sum and proportion of time covered by measurements compared to the duration of the aggregation period (month, year, ...).
+
+ - Requires R packages tidyverse, parallel and lubridate.
