@@ -9,7 +9,7 @@ options(warnPartialMatchDollar = T)
 library(tidyverse)
 
 #Adjust work dir path
-WorkDir <- "/home/schmitz/data/sync_gwdg/KRB/Produkte/2021 - Na Tracer Paper/Auswertungen/03_AggregateDepoOverSeasons"
+WorkDir <- "/path/to/my/work_dir"
 
 #Load the function that does the actual work
 source(file.path(WorkDir,"TemporalAggregation.R"))
@@ -31,10 +31,12 @@ str(Dat)
 
 
 
-
 #
 #Preparations------
 #
+
+#Required columns are
+#"ID", "date_start", "date_end" and "value"
 
 #Important:
 # - Define the level of aggregation of the data. I.e., generate an ID per subset of data that
