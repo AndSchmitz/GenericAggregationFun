@@ -24,7 +24,11 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
       duration_days = difftime(date_end,date_start,units = "days")
     )
   if ( any(DataToAggregate$duration_days < 0) ) stop("date_end must be > date_start for all periods.")
-
+  #Exclude cases with date_start = date_end
+  nCasesZeroDuration =  sum( DataToAggregate$date_start == DataToAggregate$date_end )
+  if ( nCasesZeroDuration > 0 ) {
+    stop(paste(nCasesZeroDuration,"datasets found where date_start == date_end, i.e. periods with a length of zero days. This is currently not supported by function TemporalAggregation()."))
+  }
   
   #Determine whether AggregationPeriods is a data frame with specified start and end dates for aggregation or
   #whether it is a string with allowed values "monthly" or "annual"
@@ -93,68 +97,98 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
   #Actual aggregation function called per data subset (per ID)
   AggregationFun <- function(DataSubSetPerID,AggregationPeriods) {
     
-    Sub <- DataSubSetPerID
-    DataSubSetPerID$ID = as.character(DataSubSetPerID$ID)
-    AggregationPeriods$ID = as.character(AggregationPeriods$ID)
-    CurrentID <- unique(Sub$ID)
+    #To make the debugging easier, the actual aggregation computation is wrapped inside a
+    #tryCatch() construct. This allows for example to report the ID of the data that caused
+    #an error.
     
-    if ( (length(CurrentID) != 1) ) stop("ID must be unique among data send to AggregationFun()")
+    #Start of try-block for tryCatch
+    Result <- tryCatch({
     
-    #Stretching data to a daily level
-    #Create repetitions of each data set. The number of times of the repetition corresponds to the period duration.
-    #Continuous assignment of days since 1900 to repetitions of each substance-period, from date_start to date_end
-    Sub$DataSetID <- 1:nrow(Sub)
-    SubDaily <- Sub[rep(row.names(Sub), Sub$duration_days), ]
-    
-    #Now assign a daily date to each row
-    SubDaily$FirstDayOfDataSetID <- c(T,diff(SubDaily$DataSetID) != 0)
-    SubDaily$i <- 1:nrow(SubDaily)
-    SubDaily$Correction <- -rep(SubDaily$i[SubDaily$FirstDayOfDataSetID],SubDaily$duration_days[SubDaily$FirstDayOfDataSetID])
-    SubDaily$RunningDayInPeriod <- SubDaily$i + SubDaily$Correction
-    SubDaily$date_start_d1900 <- as.numeric(difftime(time1=SubDaily$date_start,time2=as.Date("1900-01-01"),units="days"))
-    SubDaily$d_1900 <- SubDaily$date_start_d1900 + SubDaily$RunningDayInPeriod
-    
-    #Create daily averages - avg over parallel measurements
-    SubDailyAvg <- aggregate(value ~ d_1900,data=SubDaily,FUN=mean)
-    
-    #Convert AggregationPeriods to days after 1900
-    Aggs <- AggregationPeriods %>%
-      filter(ID == CurrentID)
-    if ( nrow(Aggs) == 0 ) return()
-    Aggs$date_aggregation_start_d1900 <- as.numeric(difftime(time1=Aggs$date_aggregation_start,time2=as.Date("1900-01-01"),units="days"))
-    Aggs$date_aggregation_end_d1900 <- as.numeric(difftime(time1=Aggs$date_aggregation_end,time2=as.Date("1900-01-01"),units="days"))
-    Aggs$Avg = NA
-    Aggs$Median = NA
-    Aggs$Sum = NA
-    Aggs$Min = NA
-    Aggs$Max = NA
-    Aggs$TempCover = NA
-    
-    #For each AggregationPeriod - aggregate!
-    for ( iAP in 1:nrow(Aggs) ) {
-      tmp <- SubDailyAvg %>%
-        filter(
-          d_1900 >= Aggs$date_aggregation_start_d1900[iAP],
-          d_1900 <= Aggs$date_aggregation_end_d1900[iAP]
-        )
-      if ( nrow(tmp) == 0 ) {
-        Aggs$TempCover[iAP] <- 0
-        next
+      Sub <- DataSubSetPerID
+      DataSubSetPerID$ID = as.character(DataSubSetPerID$ID)
+      AggregationPeriods$ID = as.character(AggregationPeriods$ID)
+      CurrentID <- unique(Sub$ID)
+      
+      if ( (length(CurrentID) != 1) ) stop("ID must be unique among data send to AggregationFun()")
+      
+      #Stretching data to a daily level
+      #Create repetitions of each data set. The number of times of the repetition corresponds to the period duration.
+      #Continuous assignment of days since 1900 to repetitions of each substance-period, from date_start to date_end
+      Sub$DataSetID <- 1:nrow(Sub)
+      SubDaily <- Sub[rep(row.names(Sub), Sub$duration_days), ]
+      
+      #Now assign a daily date to each row
+      SubDaily$FirstDayOfDataSetID <- c(T,diff(SubDaily$DataSetID) != 0)
+      SubDaily$i <- 1:nrow(SubDaily)
+      SubDaily$Correction <- -rep(SubDaily$i[SubDaily$FirstDayOfDataSetID],SubDaily$duration_days[SubDaily$FirstDayOfDataSetID])
+      SubDaily$RunningDayInPeriod <- SubDaily$i + SubDaily$Correction
+      SubDaily$date_start_d1900 <- as.numeric(difftime(time1=SubDaily$date_start,time2=as.Date("1900-01-01"),units="days"))
+      SubDaily$d_1900 <- SubDaily$date_start_d1900 + SubDaily$RunningDayInPeriod
+      
+      #Create daily averages - avg over parallel measurements
+      SubDailyAvg <- aggregate(value ~ d_1900,data=SubDaily,FUN=mean)
+      
+      #Convert AggregationPeriods to days after 1900
+      Aggs <- AggregationPeriods %>%
+        filter(ID == CurrentID)
+      if ( nrow(Aggs) == 0 ) return()
+      Aggs$date_aggregation_start_d1900 <- as.numeric(difftime(time1=Aggs$date_aggregation_start,time2=as.Date("1900-01-01"),units="days"))
+      Aggs$date_aggregation_end_d1900 <- as.numeric(difftime(time1=Aggs$date_aggregation_end,time2=as.Date("1900-01-01"),units="days"))
+      Aggs$Avg = NA
+      Aggs$Median = NA
+      Aggs$Sum = NA
+      Aggs$Min = NA
+      Aggs$Max = NA
+      Aggs$TempCover = NA
+      
+      #For each AggregationPeriod - aggregate!
+      for ( iAP in 1:nrow(Aggs) ) {
+        tmp <- SubDailyAvg %>%
+          filter(
+            d_1900 >= Aggs$date_aggregation_start_d1900[iAP],
+            d_1900 <= Aggs$date_aggregation_end_d1900[iAP]
+          )
+        if ( nrow(tmp) == 0 ) {
+          Aggs$TempCover[iAP] <- 0
+          next
+        }
+        Aggs$Avg[iAP] = mean(tmp$value)
+        Aggs$Median[iAP] = median(tmp$value)
+        Aggs$Sum[iAP] = sum(tmp$value)
+        Aggs$Min[iAP] = min(tmp$value)
+        Aggs$Max[iAP] = max(tmp$value)
+        Aggs$TempCover[iAP] = nrow(tmp) / (Aggs$date_aggregation_end_d1900[iAP] - Aggs$date_aggregation_start_d1900[iAP] + 1)
       }
-      Aggs$Avg[iAP] = mean(tmp$value)
-      Aggs$Median[iAP] = median(tmp$value)
-      Aggs$Sum[iAP] = sum(tmp$value)
-      Aggs$Min[iAP] = min(tmp$value)
-      Aggs$Max[iAP] = max(tmp$value)
-      Aggs$TempCover[iAP] = nrow(tmp) / (Aggs$date_aggregation_end_d1900[iAP] - Aggs$date_aggregation_start_d1900[iAP] + 1)
-    }
-    Aggs <- Aggs %>%
-      select(-date_aggregation_start_d1900,-date_aggregation_end_d1900)
+      
+      #tryCatch()' will return the last evaluated expression 
+      # in case the "try" part was completed successfully
+      Aggs <- Aggs %>%
+        select(-date_aggregation_start_d1900,-date_aggregation_end_d1900)
+      
+    }, #End of try-block for tryCatch
     
-
-    return(Aggs)
+    #Action if the try-block resultated in an error:
+    error = function(error_condition) {
+      message(paste("Error in TemporalAggregation() function for data with ID:", CurrentID,". The error meassage was:"))
+      message(error_condition)
+      return(NA)
+    },
     
-  } #enf of function to aggregate per ID
+    #Action if the try-block resultated in a warnings
+    warning = function(warning_condition) {
+      message(paste("Warning in TemporalAggregation() function for data with ID:", CurrentID,". The error meassage was:"))
+      message(error_condition)
+      return(NA)
+    },
+    
+    #Code to be executed regardless of whether try-catch succeeded or failed
+    finally = {}
+    
+  ) #End of the try-catch construct
+    
+  return(Result)
+    
+  } #end of function to aggregate per ID
   
   
   #Set up parallel processing
