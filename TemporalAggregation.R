@@ -178,6 +178,22 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
   AggsDF <- do.call(bind_rows, AggsList)
   #Drop row names
   row.names(AggsDF) <- NULL
+  #Calculate AggregationPeriodLength_days
+  #and round TempCover
+  AggsDF <- AggsDF %>%
+    mutate(
+      TempCover = round(TempCover,2),
+      AggregationPeriodLength_days = as.numeric(difftime(
+        time1 = date_aggregation_end,
+        time2 = date_aggregation_start,
+        units = "days"
+      )) + 1 #Plus one because both the first and last day are counted
+    )
+  #Reorder columns
+  Cols <- colnames(AggsDF)
+  FirstCols <- c("ID","date_aggregation_start","date_aggregation_end","AggregationPeriodLength_days","TempCover")
+  OtherCols <- Cols[!(Cols %in% FirstCols)]
+  AggsDF <- AggsDF[,c(FirstCols,OtherCols)]
   #Return
   return(AggsDF)
 }
