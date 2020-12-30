@@ -10,4 +10,4 @@ R function to aggregate period-wise data over time. For example, can calculate t
  
  - The following aggregates are reported: Mean, Median, Min, Max, Sum and proportion of time covered by measurements compared to the duration of the aggregation period (month, year, ...).
 
- - Requires R packages tidyverse, parallel and lubridate.
+ - Requires R packages tidyverse, parallel, lubridate and Hmisc.
