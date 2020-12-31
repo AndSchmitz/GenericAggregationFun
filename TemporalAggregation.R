@@ -125,8 +125,8 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
       SubDaily$date_start_d1900 <- as.numeric(difftime(time1=SubDaily$date_start,time2=as.Date("1900-01-01"),units="days"))
       SubDaily$d_1900 <- SubDaily$date_start_d1900 + SubDaily$RunningDayInPeriod
       
-      #Create daily averages - avg over parallel measurements
-      SubDailyAvg <- aggregate(value ~ d_1900,data=SubDaily,FUN=mean)
+      #Create daily means - avg over parallel measurements
+      SubDailyMean <- aggregate(value ~ d_1900,data=SubDaily,FUN=mean)
       
       #Convert AggregationPeriods to days after 1900
       Aggs <- AggregationPeriods %>%
@@ -134,7 +134,7 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
       if ( nrow(Aggs) == 0 ) return()
       Aggs$date_aggregation_start_d1900 <- as.numeric(difftime(time1=Aggs$date_aggregation_start,time2=as.Date("1900-01-01"),units="days"))
       Aggs$date_aggregation_end_d1900 <- as.numeric(difftime(time1=Aggs$date_aggregation_end,time2=as.Date("1900-01-01"),units="days"))
-      Aggs$Avg = NA
+      Aggs$Mean = NA
       Aggs$Median = NA
       Aggs$Sum = NA
       Aggs$Min = NA
@@ -143,7 +143,7 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
       
       #For each AggregationPeriod - aggregate!
       for ( iAP in 1:nrow(Aggs) ) {
-        tmp <- SubDailyAvg %>%
+        tmp <- SubDailyMean %>%
           filter(
             d_1900 >= Aggs$date_aggregation_start_d1900[iAP],
             d_1900 <= Aggs$date_aggregation_end_d1900[iAP]
@@ -152,7 +152,7 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
           Aggs$TempCover[iAP] <- 0
           next
         }
-        Aggs$Avg[iAP] = mean(tmp$value)
+        Aggs$Mean[iAP] = mean(tmp$value)
         Aggs$Median[iAP] = median(tmp$value)
         Aggs$Sum[iAP] = sum(tmp$value)
         Aggs$Min[iAP] = min(tmp$value)
