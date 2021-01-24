@@ -30,7 +30,6 @@ Dat <- read.table(
 str(Dat)
 
 
-
 #
 #Preparations------
 #
@@ -46,9 +45,11 @@ str(Dat)
 Dat <- Dat %>%
   mutate(
     ID = paste(code_country, code_plot, code_sampler, sep = "-"),
-    date_start = as.Date(date_start,format = "%d.%m.%Y"),
-    date_end = as.Date(date_end,format = "%d.%m.%Y")
+    date_start = as.Date(date_start),
+    date_end = as.Date(date_end)
   )
+str(Dat)
+
 
 
 #
