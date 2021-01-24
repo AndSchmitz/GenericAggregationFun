@@ -14,7 +14,7 @@ R function to aggregate period-wise data over time.
  
  - Note that values in the column "value" of the input data are interpreted as daily values (e.g. average concentration in the period or average daily element flux in the period). The "Sum" column of the aggregated output reports the integral of the daily values (averaged over parallel measurements) over the aggregation period. In order to aggregate data that describes the total element flux in the period, convert to daily element fluxes first (divide by period duration).
  
- - Note that both date_start and date_end are interpreted to be completely included in the respective measurement period. Thus, if subsequent measurements did not overlap in time, make sure that date_end does not overlap with date_start of the next period.
+ - Note that both date_start and date_end are interpreted to be completely included in the respective measurement period. Thus, if subsequent measurements did not overlap in time, make sure that date_end does not overlap with date_start of the next period. Function "HarmonizeDateEndCoding.R" can be used to adjust the end dates of periods if necessary.
  
 Correct in case of non-overlapping sampling:
 
@@ -23,8 +23,7 @@ Correct in case of non-overlapping sampling:
 |A| 2020-03-01  | 2020-03-31  |
 |A| 2020-04-01  | 2020-04-30  |
 
-Wrong in case of non-overlapping sampling:
-(will lead to an understimation of the aggregation output ("Sum") because one day of the two periods is averaged before summation (treated as parallel measurement))
+Wrong in case of non-overlapping sampling (will lead to an understimation of the aggregation output ("Sum") because one day of the two periods is averaged before summation (treated as parallel measurement)):
 
 |ID| date_start  | date_end |
 |--| ------------- | ------------- |
