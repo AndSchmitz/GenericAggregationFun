@@ -1,4 +1,4 @@
-TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
+TemporalAggregation <- function(DataToAggregate,AggregationPeriods,FixDateStartEndOverlap=T) {
 
   # R function to average over parallel measurements and aggregate measurements to a monthly or annual basis.
   # - The following aggregates are reported: Mean, Median, Min, Max, Sum and proportion of time covered by measurements per month or year.
@@ -19,16 +19,69 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
   if ( class(DataToAggregate$date_end) != "Date" ) stop("Column date_end must be of class Date.")
   if ( any(is.na(DataToAggregate$date_start)) ) stop("Values in column date_start must not be NA")
   if ( any(is.na(DataToAggregate$date_end)) ) stop("Values in column date_end must not be NA")
-  DataToAggregate <- DataToAggregate %>%
-    mutate(
-      duration_days = difftime(date_end,date_start,units = "days")
-    )
-  if ( any(DataToAggregate$duration_days < 0) ) stop("date_end must be > date_start for all periods.")
-  #Exclude cases with date_start = date_end
+  #Do not allow cases with negative period duration
+  nCasesNegDuration =  sum( DataToAggregate$date_start > DataToAggregate$date_end )
+  if ( nCasesNegDuration > 0 ) {
+    stop(paste(nCasesNegDuration,"datasets found where date_start > date_end. This is currently not supported by function TemporalAggregation()."))
+  }
+  #Do not allow cases with date_start = date_end
   nCasesZeroDuration =  sum( DataToAggregate$date_start == DataToAggregate$date_end )
   if ( nCasesZeroDuration > 0 ) {
-    stop(paste(nCasesZeroDuration,"datasets found where date_start == date_end, i.e. periods with a length of zero days. This is currently not supported by function TemporalAggregation()."))
+    stop(paste(nCasesZeroDuration,"datasets found where date_start == date_end. This is currently not supported by function TemporalAggregation()."))
   }
+  
+  #FixDateStartEndOverlap
+  if ( FixDateStartEndOverlap ) {
+    #Example:
+    #ID   date_start   #date_end
+    #A    2020-03-01   2020-03-31
+    #A    2020-03-31   2020-04-30
+    #FixDateStartEndOverlap=TRUE will set date_end of first period from 2020-03-31 to
+    #2020-03-30 before aggretation. I.e. it will reduce all date_end dates by one day
+    #if an identical date_start date exists for the same ID.
+    #If FixDateStartEndOverlap=FALSE, dates are interpreted as provided. This means
+    #that values for the day(s) of overlap will be averaged. This means for example,
+    #that the "Sum" output of the aggregation procedure is smaller than manually adding
+    #up the values of the different periods without taking into account the overlap.
+    #
+    #Actually reduce date_end by one day where required.
+    ColNamesKeep <- colnames(DataToAggregate)
+    DataToAggregate <- DataToAggregate %>%
+      mutate(
+        DateStartID <- paste(ID,date_start,sep="-"),
+        DateEndID <- paste(ID,date_end,sep="-"),
+        #Create a new column indicating for each row whether its "DateEndID" is equal
+        #to another row's "DateStartID". If such a row exists, this means that a directly
+        #subsequent period for the respective plot-sampler exists.
+        AnotherPeriodStartingOnEndDayExists <- DateEndID %in% DateStartID,
+        date_end = case_when(
+          AnotherPeriodStartingOnEndDayExists == TRUE ~ date_end - 1,
+          AnotherPeriodStartingOnEndDayExists == FALSE ~ date_end
+        )
+      )
+    #Check again for cases where date_start = date_end
+    nCasesZeroDurationAfterFix =  sum( DataToAggregate$date_start == DataToAggregate$date_end )
+    if ( nCasesZeroDurationAfterFix > 0 ) {
+      stop(
+        paste(
+          nCasesZeroDurationAfterFix,
+          "datasets found where date_end = date_start+1 and the date_start of the next period is also date_start+1.
+          This is currently not supported by function TemporalAggregation()."
+        )
+      )
+    }
+    #Drop all auxilliary columns added in the previous steps, no longer necessary
+    DataToAggregate <- DataToAggregate[,ColNamesKeep]    
+  } #end of  if ( FixDateStartEndOverlap ) {
+
+DataToAggregate <- DataToAggregate %>%
+  mutate(
+    #Calculate period duration. It is always assumed that measurements started
+    #on date_start at 00:00 and ended on date_end at 23:59, i.e. that both dates
+    #are completely covered by measurements. Thus, +1:
+    duration_days = as.numeric(difftime(date_end,date_start,units = "days")) + 1
+  )
+  
   
   #Determine whether AggregationPeriods is a data frame with specified start and end dates for aggregation or
   #whether it is a string with allowed values "monthly" or "annual"
@@ -44,7 +97,7 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
     stop("AggregationPeriods must either be a data frame or a character string.")
   } else {
     if ( !(AggregationPeriods %in% c("monthly","annual")) ) stop("If AggregationPeriods is character it must be either 'monthly' or 'annual'")
-    #Manually create an 'AggregationPeriods' data frame from 'monhly' or 'annual' specifications
+    #Manually create an 'AggregationPeriods' data frame from 'monthly' or 'annual' specifications
     #Identify all unique years or months per ID for which data is available and schedule
     #aggregation for these periods
     tmp <- DataToAggregate %>%
@@ -82,7 +135,8 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods) {
       select(ID,date_aggregation_start,date_aggregation_end) %>%
       distinct()
   }
-    
+  
+  
 
   #Basic idea: Repeat the each row as many times as the corresponding period has duration_days.
   #This yields data on a daily level. Perform monthly or annual aggregation on this dataset.
