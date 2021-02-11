@@ -24,19 +24,14 @@ TemporalAggregation <- function(DataToAggregate,AggregationPeriods,FixDateStartE
   if ( nCasesNegDuration > 0 ) {
     stop(paste(nCasesNegDuration,"datasets found where date_start > date_end. This is currently not supported by function TemporalAggregation()."))
   }
-  #Do not allow cases with date_start = date_end
-  nCasesZeroDuration =  sum( DataToAggregate$date_start == DataToAggregate$date_end )
-  if ( nCasesZeroDuration > 0 ) {
-    stop(paste(nCasesZeroDuration,"datasets found where date_start == date_end. This is currently not supported by function TemporalAggregation()."))
-  }
-  
-DataToAggregate <- DataToAggregate %>%
-  mutate(
-    #Calculate period duration. It is always assumed that measurements started
-    #on date_start at 00:00 and ended on date_end at 23:59, i.e. that both dates
-    #are completely covered by measurements. Thus, +1:
-    duration_days = as.numeric(difftime(date_end,date_start,units = "days")) + 1
-  )
+
+  DataToAggregate <- DataToAggregate %>%
+    mutate(
+      #Calculate period duration. It is always assumed that measurements started
+      #on date_start at 00:00 and ended on date_end at 23:59, i.e. that both dates
+      #are completely covered by measurements. Thus, +1:
+      duration_days = as.numeric(difftime(date_end,date_start,units = "days")) + 1
+    )
   
   #Determine whether AggregationPeriods is a data frame with specified start and end dates for aggregation or
   #whether it is a string with allowed values "monthly" or "annual"
